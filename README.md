@@ -12,6 +12,14 @@ By overwriting system functions like `fopen`, `readdir`, `access` and
 `unlinkat` it makes it nearly impossible to remove/detect the backdoor.
 I also wrote a simple client that you can use to connect the backdoor.
 
+## Features
+- ✔ Hidden in the process list
+- ✔ Hidden in the file system
+- ✔ Unreadable
+- ✔ Undeleteable
+- ✔ Unwriteable
+- ❌ Hidden in the network list (WIP)
+
 ## Installing the rootkit
 To install the rootkit on a victim machine:
 ```
@@ -37,6 +45,6 @@ chmod +x client.py
 
 ## Resources
 To learn more about LD_PRELOAD rootkits, I highly recommend you read [this
-article](https://compilepeace.medium.com/memory-malware-part-0x2-writing-userland-rootkits-via-ld-preload-30121c8343d5)
+article](https://compilepeace.medium.com/memory-malware-part-0x2-writing-userland-rootkits-via-ld-preload-30121c8343d5).
 I also left some comments in the [loader.c](loader.c) so you can go ahead and read it.
-You can also create an issue/PR if you are interested,
+You can also create an issue/PR if you are interested.
