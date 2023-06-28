@@ -1,3 +1,4 @@
 loader.so
 backdoor.py
 client.py
+rootkit/loader.so
