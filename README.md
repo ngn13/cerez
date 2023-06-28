@@ -13,7 +13,7 @@ and others.
 ## Features
 - ✔ Hides files in the file system 
 - ✔ Hides proceses in the process list 
-- ❌Hides connections in the network list
+- ❌ Hides connections in the network list
 - ✔ Makes files unreadable 
 - ✔ Makes files unwriteable 
 - ✔ Makes processes unkillable 
