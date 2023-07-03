@@ -46,5 +46,5 @@ output:1                       --> if set to 1, cerez will hide any console outp
 ## Resources
 To learn more about LD_PRELOAD rootkits, I highly recommend you read [this
 article](https://compilepeace.medium.com/memory-malware-part-0x2-writing-userland-rootkits-via-ld-preload-30121c8343d5).
-I also left some comments in the [loader.c](loader.c) so you can go ahead and read it.
+I also left some comments in the [loader.c](rootkit/loader.c) so you can go ahead and read it.
 You can also create an issue/PR if you are interested.
