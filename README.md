@@ -1,5 +1,6 @@
 <h1 align="center">
-  <img src="assets/banner.png"/>  
+  <img src="assets/showcase.png"/>  
+  <br>
   <br>
   Cerez 😈 A simple userland LD_PRELOAD rootkit
 </h1>
