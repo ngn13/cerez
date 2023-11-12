@@ -11,7 +11,7 @@ int init_cfg(struct Config* cfg){
   cfg->hidden = (const char**)malloc(sizeof(char*)); 
 
   if (cfg == NULL || cfg->hidden == NULL){
-    debug("error allocating conifg");
+    debug("error allocating config");
     return -1;
   }
 

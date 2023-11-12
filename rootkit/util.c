@@ -18,12 +18,12 @@ static FILE* (*ofopen)(const char *, const char*) = NULL;
 
 void *find_addr(char *symbol){
   // RTLD_NEXT is not defined, unless you use #define _GNU_SOURCE
-	void *address = dlsym(RTLD_NEXT, symbol);
-	if (address == NULL){
+  void *address = dlsym(RTLD_NEXT, symbol);
+  if (address == NULL){
     debug("cant find address");
     exit(0);
   }
-	return address;
+  return address;
 }
 
 char * replace(char * string, char x, char y, int len){
@@ -53,7 +53,7 @@ struct proc find_proc(const char* name) {
   }
 
   while ((entry = readdir(dir)) != NULL) {
-    if (entry->d_type != DT_DIR) {
+    if (entry->d_type != DT_DIR) {  
       continue;
     }
 
