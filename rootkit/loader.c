@@ -161,15 +161,10 @@ int open(const char *pathname, int flags, ...){
     return -1;
   }
 
-  // so you might be thinking,
-  // how do you pass the "..."	
-	// well idk
-  // so i found a easier
-  // solution
-
-	// i dont
-  return oopen(pathname, flags);
-	// this is probably not a good idea
+  va_list modes;
+  va_start(modes, flags);
+  return oopen(pathname, flags, modes);
+  va_end(modes);
 }
 
 int unlinkat(int dirfd, const char *pathname, int flags){
