@@ -8,7 +8,7 @@
 char* CONFIG_FILE = "/etc/cerez.cfg";
 
 int init_cfg(struct Config* cfg){
-  cfg->hidden = (const char**)malloc(sizeof(char*)); 
+  cfg->hidden = (const char**)malloc(sizeof(char*));  
 
   if (cfg == NULL || cfg->hidden == NULL){
     debug("error allocating config");

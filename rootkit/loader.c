@@ -163,8 +163,10 @@ int open(const char *pathname, int flags, ...){
 
   va_list modes;
   va_start(modes, flags);
-  return oopen(pathname, flags, modes);
+  int mode = va_arg(modes, int);
+  int res = oopen(pathname, flags, mode);
   va_end(modes);
+  return res;
 }
 
 int unlinkat(int dirfd, const char *pathname, int flags){
