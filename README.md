@@ -19,7 +19,7 @@ hidden. It does so by overwriting syscalls and functions like `open`, `unlinkat`
 - ✔ Makes files unwriteable 
 
 ## Install 
-> **Warning**
+> [!Warning]
 > Don't forget to edit `cerez.cfg` before install 
 
 ### You will need to install `build-essential` and `libconfig` to compile!
