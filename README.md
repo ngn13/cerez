@@ -17,8 +17,8 @@ hidden. It does so by overwriting (g)libc functions such as `open`, `unlinkat` e
 - ✔ Makes files unaccessable
 
 ## Install
-> [!Warning]
-> Don't forget to edit `cerez.cfg` before install
+> [!Important]
+> Don't forget to edit `cerez.cfg` after the installation
 
 ### You will need to install `build-essential` and `libconfig` to compile!
 You can install it with `apt` on debian based systems:
