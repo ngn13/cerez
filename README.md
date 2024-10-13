@@ -1,25 +1,24 @@
 <h1 align="center">
-  <img src="assets/showcase.png"/>  
-  <br>
+  <img src="assets/showcase.png"/>
   <br>
   Cerez 😈 Simple userland LD_PRELOAD rootkit
 </h1>
 
-Cerez is a configurable userland `LD_PRELOAD` rootkit, by installing it 
+Cerez is a configurable userland `LD_PRELOAD` rootkit, by installing it
 into `/etc/ld.so.preload`, you can preload it before every binary.
-It can protect/hide your backdoor as well other files you want 
+It can protect/hide your backdoor as well other files you want
 hidden. It does so by overwriting (g)libc functions such as `open`, `unlinkat` etc.
 
 ## Features
-- ✔ Hides files in the file system 
-- ✔ Hides your backdoor in the process list 
+- ✔ Hides files in the file system
+- ✔ Hides your backdoor in the process list
 - ❌ Hides connections in the network list
-- ✔ Makes your backdoor unkillable 
+- ✔ Makes your backdoor unkillable
 - ✔ Makes files unaccessable
 
-## Install 
+## Install
 > [!Warning]
-> Don't forget to edit `cerez.cfg` before install 
+> Don't forget to edit `cerez.cfg` before install
 
 ### You will need to install `build-essential` and `libconfig` to compile!
 You can install it with `apt` on debian based systems:
